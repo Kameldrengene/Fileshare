@@ -1,22 +1,26 @@
 {
-    "name": "fileshare",
-    "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-      "type": "git",
-      "url": "git+https://github.com/Kameldrengene/Fileshare.git"
-    },
-    "author": "",
-    "license": "ISC",
-    "bugs": {
-      "url": "https://github.com/Kameldrengene/Fileshare/issues"
-    },
-    "homepage": "https://github.com/Kameldrengene/Fileshare#readme",
-    "dependencies": {
-      "express": "^4.17.1"
-    }
+  "name": "fileshare",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kameldrengene/Fileshare.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kameldrengene/Fileshare/issues"
+  },
+  "homepage": "https://github.com/Kameldrengene/Fileshare#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.0.1"
   }
+}
