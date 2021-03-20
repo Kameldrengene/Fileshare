@@ -1,19 +1,21 @@
 var express =   require("express");
 var multer  =   require('multer');
 var readdirp = require('readdirp');
+const fs = require('fs');
 var app =   express();
 var port = 8081;
 
 
 app.get('/',async function(req,res){
     const contents = [];
-    for await (const entry of readdirp('./uploads')) {
-        const {path} = entry;
-        console.log(`${JSON.stringify({path})}`);
+    for await (const entry of readdirp('./uploads',{type: 'files_directories'})) {
+        var stats = fs.lstatSync(entry.fullPath);
+        if(stats.isDirectory()){
+            contents.push(entry.path+"/")
+        }else
         contents.push(entry.path)
     }
-    res.send(JSON.stringify(contents))
-
+    res.json(contents);
 });
 
 app.post('/upload',function(req,res){
