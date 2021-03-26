@@ -2,20 +2,21 @@ const express = require('express');
 const fs = require('fs');
 const mongo = require('mongodb');
 const bodyParser = require('body-parser');
-const app = express();
+var router = express.Router();
 const MongoClient = mongo.MongoClient;
 const url = 'mongodb://localhost';
-const port = 8081
+const port = 3000
+var VerifyToken = require('./auth/VerifyToken');
 
 const DATABASE = "test_database"
 const USER_COLLECTION = "users"
 
-var server = app.listen(port, function() {});
+//var server = app.listen(port, function() {});
 
 // accept json
-app.use(bodyParser.json());
+router.use(bodyParser.json());
 
-app.get("/users", function(req, res) {
+router.get("/users", VerifyToken, function(req, res) {
     MongoClient.connect(url, function(err, db) {
         var docs = db.db(DATABASE).collection(USER_COLLECTION).find({});
 
@@ -27,7 +28,7 @@ app.get("/users", function(req, res) {
     });
 });
 
-app.get("/user/:id", function(req, res) {
+router.get("/:id", function(req, res) {
     MongoClient.connect(url, function(err, db) {
         var objectId = new mongo.ObjectID(req.params.id);
         var doc = db.db(DATABASE).collection(USER_COLLECTION).find({_id: objectId});
@@ -39,7 +40,7 @@ app.get("/user/:id", function(req, res) {
     });
 });
 
-app.post("/user/create", function(req, res) {
+router.post("/create", function(req, res) {
     MongoClient.connect(url, function (err, db) {
         var dbo = db.db(DATABASE);
         //We could ust send req.body directly to the database, but this is more secure
@@ -68,7 +69,7 @@ function createfolder(user_id) {
     return response_msg;
 }
 
-app.post("/user/update/:id", function (req, res){
+router.post("/update/:id", function (req, res){
     MongoClient.connect(url, function(err, db) {
         var dbo = db.db(DATABASE);
         var objectId = new mongo.ObjectID(req.params.id);
@@ -81,7 +82,7 @@ app.post("/user/update/:id", function (req, res){
     });
 });
 
-app.post("/user/delete/:id", function (req, res) {
+router.post("/delete/:id", function (req, res) {
     MongoClient.connect(url, function (err, db) {
         var dbo = db.db(DATABASE);
         var objectId = new mongo.ObjectID(req.params.id);
@@ -93,7 +94,7 @@ app.post("/user/delete/:id", function (req, res) {
     });
 })
 
-
+module.exports = router;
 
 
 
