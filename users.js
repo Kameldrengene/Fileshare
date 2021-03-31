@@ -91,9 +91,9 @@ router.post("/update/:id", VerifyToken, function (req, res){
 });
 
 router.post("/delete/:id", VerifyToken, function (req, res) {
-    User.findByIdAndRemove(req.userId, function (err, user) {
+    User.findByIdAndRemove(req.params.id, function (err, user) {
         if (err) return res.status(500).send("There was a problem deleting the user.");
-        const folder_res = deletefolder(req.userId);
+        const folder_res = deletefolder(req.params.id);
         res.status(200).send("User: "+ user.name +" was deleted.");
     });
 })
