@@ -3,6 +3,7 @@ var multer  =   require('multer');
 var readdirp = require('readdirp');
 const fs = require('fs');
 var router = express.Router();
+var User = require('./user/User');
 var VerifyToken = require('./auth/VerifyToken');
 
 /**
@@ -10,9 +11,9 @@ var VerifyToken = require('./auth/VerifyToken');
  * for await er en asynkron for loop som gemmer fil/mappe path i en stats variabel
  *  variablen får en / hvis dette er en mappe og ellers bliver de gemt i contents arrayet og bliver sendt som response
   */
- router.get('/',async function(req,res){
+ router.get('/',VerifyToken,async function(req,res){
     const contents = [];
-    for await (const entry of readdirp('./uploads',{type: 'files_directories'})) {
+    for await (const entry of readdirp('./Users/'+req.userId,{type: 'files_directories'})) {
         var stats = fs.lstatSync(entry.fullPath);
         if(stats.isDirectory()){
             contents.push(entry.path+"/")
@@ -26,11 +27,11 @@ var VerifyToken = require('./auth/VerifyToken');
  * Multer behandler form data. Jeg har forklaret lidt om form data i status rapport.
  * Multer sat til at gemme data på harddisk og gemmer i ./uploads mappen men orginal fil navn
  */
- router.post('/upload',function(req,res){
+ router.post('/upload',VerifyToken,function(req,res){
 
     var storage =   multer.diskStorage({
         destination: function (req, file, callback) {
-            callback(null, './uploads');
+            callback(null, './Users/'+req.userId);
         },
         filename: function (req, file, callback) {
             callback(null, file.originalname);
@@ -51,8 +52,8 @@ var VerifyToken = require('./auth/VerifyToken');
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
  */
- router.get('/download/:file',function(req,res){
-    res.download("./uploads/"+req.params.file);
+ router.get('/download/:file',VerifyToken,function(req,res){
+    res.download("./Users/"+req.userId+'/'+req.params.file);
 });
 
 module.exports = router;
