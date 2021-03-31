@@ -1,7 +1,9 @@
 const express = require('express');
 const fs = require('fs');
+const fs_extra = require('fs-extra');  // in case there are files inside a folder
 const mongo = require('mongodb');
 const bodyParser = require('body-parser');
+const async = require("async");
 var router = express.Router();
 router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
@@ -38,10 +40,10 @@ router.post('/create', function(req, res) {
     User.create({
         name : req.body.name,
         age : req.body.age
-      }, 
+      },
       function (err, user) {
         if (err) return res.status(500).send("There was a problem registering the user`.");
-    
+
         // if user is registered without errors
         // create a token
         var token = jwt.sign({ id: user._id }, config.secret, {
@@ -49,7 +51,7 @@ router.post('/create', function(req, res) {
         });
         //Create a folder for user
         var folderPath = createfolder(user._id);
-    
+
         res.status(200).send({ auth: true, token: token, folder: folderPath });
       });
 });
@@ -62,10 +64,22 @@ function createfolder(user_id) {
             fs.mkdirSync(folderName)
             response_msg = "The folder "+"\""+user_id+"\""+" successfully created";
         }else
-            response_msg = "The folder is already created for this user";
+            response_msg = "The folder already exists for this user";
     } catch (error) {
-            console.error(error)
+        console.error(error)
+        response_msg = error
     }
+    return response_msg;
+}
+function deletefolder(user_id){
+    const folder = './Users/'+user_id;
+    var response_msg = "Folder not deleted";
+    try{fs_extra.removeSync(folder,{recursive: true})
+       response_msg = "The folder "+"\""+user_id+"\""+" is safely removed";
+    }catch (error){
+        response_msg = error;
+    }
+    console.log("delete folder "+response_msg)
     return response_msg;
 }
 
@@ -79,6 +93,7 @@ router.post("/update/:id", VerifyToken, function (req, res){
 router.post("/delete/:id", VerifyToken, function (req, res) {
     User.findByIdAndRemove(req.params.id, function (err, user) {
         if (err) return res.status(500).send("There was a problem deleting the user.");
+        const folder_res = deletefolder(req.params.id);
         res.status(200).send("User: "+ user.name +" was deleted.");
     });
 })
