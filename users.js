@@ -5,6 +5,7 @@ const mongo = require('mongodb');
 const bodyParser = require('body-parser');
 const async = require("async");
 var router = express.Router();
+var cors = require('cors');
 router.use(bodyParser.urlencoded({extended: false}));
 router.use(bodyParser.json());
 var bcrypt = require('bcryptjs');
@@ -13,7 +14,7 @@ var VerifyToken = require('./auth/VerifyToken');
 var config = require('./config');
 var User = require('./user/User');
 
-
+router.use(cors())
 //var server = app.listen(port, function() {});
 
 // accept json
@@ -60,7 +61,7 @@ router.post('/create', function (req, res) {
                 //Create a folder for user
                 var folderPath = createfolder(user._id);
 
-                res.status(200).send({auth: true, token: token, folder: folderPath});
+                res.status(200).send({auth: true, token: token, id: user._id,folder: folderPath});
             });
     });
 });
