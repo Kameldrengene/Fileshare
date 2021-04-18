@@ -2,9 +2,12 @@ var express =   require("express");
 var multer  =   require('multer');
 var readdirp = require('readdirp');
 const fs = require('fs');
+var cors = require('cors');
 var router = express.Router();
 var User = require('./user/User');
 var VerifyToken = require('./auth/VerifyToken');
+
+router.use(cors())
 
 /**
  * Viser alle filerne i et mappestruktur som har roden ./uploads
