@@ -96,6 +96,8 @@ function deletefolder(user_id) {
 }
 
 router.post("/update/:id", VerifyToken, function (req, res) {
+    var hashedPassword = bcrypt.hashSync(req.body.password, 8);
+    req.body.password = hashedPassword;
     User.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, user) {
         if (err) return res.status(500).send("There was a problem updating the user.");
         res.status(200).send(user);
