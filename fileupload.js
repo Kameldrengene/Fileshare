@@ -18,10 +18,11 @@ router.use(cors())
     const contents = [];
     for await (const entry of readdirp('./Users/'+req.userId,{type: 'files_directories'})) {
         var stats = fs.lstatSync(entry.fullPath);
+        console.log(entry.path)
         if(stats.isDirectory()){
-            contents.push(entry.path+"/")
+            contents.push({path:entry.path+"/",type:"directory"})
         }else
-        contents.push(entry.path)
+        contents.push({path:entry.path,type:"file"})
     }
     res.json(contents);
 });
