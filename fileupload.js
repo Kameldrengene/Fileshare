@@ -30,7 +30,7 @@ router.use(cors())
                 Rename: "/api/files/rename/"+"?path="+entry.path+"&?newpath=newpath",
                 Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname"}})
     }
-    res.json(contents);
+    res.status(200).json(contents);
 });
 
 /**
@@ -73,7 +73,7 @@ router.use(cors())
      else if(!isdone){
          response = "error creating the folder"
      }
-    res.json({response: response,options:{delete: "/api/files/delete/"+"?path="+path,
+    res.status(200).json({response: response,options:{delete: "/api/files/delete/"+"?path="+path,
             Rename: "/api/files/rename/"+"?oldpath="+path+"&?newpath=newpath",
             Move: "/api/files/move/"+"?path="+path+"&?newpath=newpathname"}})
 })
@@ -84,13 +84,25 @@ router.post('/rename/',VerifyToken,function (req,res){
     var index = oldpath.lastIndexOf('/')
     var folderpath = oldpath.substring(0,index)
     var newpath = folderpath + '/' +newname
-   var response
-    if(rename(oldpath,newpath)){
-        response = "file successfully renamed"
+    var response = 'no response'
+    var status = fs.statSync(oldpath)
+    var name = 'File'
+    var options = []
+    if(status.isDirectory()) {
+        name = 'Directory'
     }
+    if (rename(oldpath, newpath)) {
+        response = name+" successfully renamed"
+    } else
+        response = name +"could not be renamed"
+    if(status.isFile())
+        options.push({response:response,options:{delete: "/api/files/delete/"+"?path="+newpath,
+            Move: "/api/files/move/"+"?path="+newpath+"&?newpath=newpathname"}})
     else
-        response = "file could not be renamed"
-    res.json({response:response})
+        options.push({response:response,options:{delete: "/api/files/delete/"+"?path="+newpath,
+                Move: "/api/files/move/"+"?path="+newpath+"&?newpath=newpathname",
+                CreateDirectory: "/api/files/create/"+"?path="+newpath+"&?name=directoryname"}})
+    res.status(200).json(options)
 })
 
 router.post('/move/',VerifyToken,function (req,res){
@@ -102,7 +114,7 @@ router.post('/move/',VerifyToken,function (req,res){
     }
     else
         response = "file could not be moved to "+newpath
-    res.send(response)
+    res.status(200).send(response)
 })
 
  router.delete('/delete/',VerifyToken,function (req,res){
@@ -116,7 +128,7 @@ router.post('/move/',VerifyToken,function (req,res){
      else if(status.isDirectory()){
          response = deletefolderSync(path)
      }
-     res.send(response)
+     res.status(200).send(response)
 })
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
@@ -159,7 +171,6 @@ function createDirectory(path){
         }
     } catch (err) {
         response = false
-        console.error(err)
     }
     return response
 }
