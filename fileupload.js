@@ -21,13 +21,13 @@ router.use(cors())
         var stats = fs.lstatSync(entry.fullPath);
         if(stats.isDirectory()){
             contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path,
-                    Rename: "/api/files/rename/"+"?path="+entry.path+"&?name=newname",
+                    Rename: "/api/files/rename/"+"?oldpath="+entry.path+"&?newpath=newpath",
                     Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname",
                     CreateDirectory: "/api/files/create/"+"?path="+entry.path+"&?name=directoryname"},
             })
         }else
         contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
-                Rename: "/api/files/rename/"+"?path="+entry.path+"&?name=newname",
+                Rename: "/api/files/rename/"+"?path="+entry.path+"&?newpath=newpath",
                 Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname"}})
     }
     res.json(contents);
@@ -58,9 +58,56 @@ router.use(cors())
         res.end("File is uploaded successfully!");
     });
 });
+
+ router.post('/createdirectory/',VerifyToken,function (req,res){
+     var path
+     if(req.query.path === '/') // if you want to create the folder inside root.
+         path = './Users/'+req.userId+'/'+req.query.name
+     else
+         path = './Users/'+req.userId+'/'+req.query.path+'/'+req.query.name
+     const isdone = createDirectory(path)
+     var response
+     if(isdone){
+         response = "Folder" +req.query.name+" created successfully"
+     }
+     else if(!isdone){
+         response = "error creating the folder"
+     }
+    res.json({response: response,options:{delete: "/api/files/delete/"+"?path="+path,
+            Rename: "/api/files/rename/"+"?oldpath="+path+"&?newpath=newpath",
+            Move: "/api/files/move/"+"?path="+path+"&?newpath=newpathname"}})
+})
+
+router.post('/rename/',VerifyToken,function (req,res){
+    const oldpath = './Users/'+req.userId+'/'+req.query.oldpath
+    const newname = req.query.newname
+    var index = oldpath.lastIndexOf('/')
+    var folderpath = oldpath.substring(0,index)
+    var newpath = folderpath + '/' +newname
+   var response
+    if(rename(oldpath,newpath)){
+        response = "file successfully renamed"
+    }
+    else
+        response = "file could not be renamed"
+    res.json({response:response})
+})
+
+router.post('/move/',VerifyToken,function (req,res){
+    var oldpath = './Users/'+req.userId+'/'+req.query.oldpath
+    var newpath = './Users/'+req.userId+'/'+req.query.newpath
+    var response
+    if(rename(oldpath,newpath)){
+        response = "file successfully moved to" + newpath
+    }
+    else
+        response = "file could not be moved to "+newpath
+    res.send(response)
+})
+
  router.delete('/delete/',VerifyToken,function (req,res){
      temp = []
-     path = './Users/'+req.userId+'/'+req.query.path
+     const path = './Users/'+req.userId+'/'+req.query.path
      var status = fs.statSync(path)
      var response
      if(status.isFile()){
@@ -102,4 +149,28 @@ function deletefolderSync(path) {
     return response_msg;
 }
 
+function createDirectory(path){
+    const folderName = path
+    var response
+    try {
+        if (!fs.existsSync(folderName)) {
+            fs.mkdirSync(folderName)
+            response = true
+        }
+    } catch (err) {
+        response = false
+        console.error(err)
+    }
+    return response
+}
+
+async function rename(oldpath,newpath){
+    fs.rename(oldpath, newpath, err => {
+        if (err) {
+            console.error(err)
+            return false
+        }else
+            return true
+    })
+}
 module.exports = router;
