@@ -19,7 +19,6 @@ router.use(cors())
     const contents = [];
     for await (const entry of readdirp('./Users/'+req.userId,{type: 'files_directories'})) {
         var stats = fs.lstatSync(entry.fullPath);
-        console.log(entry.path)
         if(stats.isDirectory()){
             contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path,
                     Rename: "/api/files/rename/"+"?path="+entry.path+"&?name=newname",
@@ -40,9 +39,10 @@ router.use(cors())
  */
  router.post('/upload',VerifyToken,function(req,res){
 
+     const path = req.query.path
     var storage =   multer.diskStorage({
         destination: function (req, file, callback) {
-            callback(null, './Users/'+req.userId);
+            callback(null, './Users/'+req.userId+"/"+path);
         },
         filename: function (req, file, callback) {
             callback(null, file.originalname);
