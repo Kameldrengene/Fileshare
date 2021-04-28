@@ -1,6 +1,7 @@
 var express =   require("express");
 var multer  =   require('multer');
 var readdirp = require('readdirp');
+const fs_extra = require('fs-extra');
 const fs = require('fs');
 var cors = require('cors');
 var router = express.Router();
@@ -20,9 +21,15 @@ router.use(cors())
         var stats = fs.lstatSync(entry.fullPath);
         console.log(entry.path)
         if(stats.isDirectory()){
-            contents.push({path:entry.path+"/",type:"directory"})
+            contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path,
+                    Rename: "/api/files/rename/"+"?path="+entry.path+"&?name=newname",
+                    Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname",
+                    CreateDirectory: "/api/files/create/"+"?path="+entry.path+"&?name=directoryname"},
+            })
         }else
-        contents.push({path:entry.path,type:"file"})
+        contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
+                Rename: "/api/files/rename/"+"?path="+entry.path+"&?name=newname",
+                Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname"}})
     }
     res.json(contents);
 });
@@ -48,16 +55,51 @@ router.use(cors())
         if(err) {
             return res.end("Error uploading file.");
         }
-
-
         res.end("File is uploaded successfully!");
     });
 });
+ router.delete('/delete/',VerifyToken,function (req,res){
+     temp = []
+     path = './Users/'+req.userId+'/'+req.query.path
+     var status = fs.statSync(path)
+     var response
+     if(status.isFile()){
+         response = deletefileSync(path)
+     }
+     else if(status.isDirectory()){
+         response = deletefolderSync(path)
+     }
+     res.send(response)
+})
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
  */
  router.get('/download/:file',VerifyToken,function(req,res){
     res.download("./Users/"+req.userId+'/'+req.params.file);
 });
+
+function deletefileSync(filepath){
+    const path= filepath
+    var reponse
+    try {
+        fs.unlinkSync(path)
+        reponse = "Successfully deleted the file."
+    } catch(err) {
+        reponse = err;
+    }
+    return reponse
+}
+function deletefolderSync(path) {
+    const folder = path
+    var response_msg = "Folder not deleted";
+    try {
+        fs_extra.removeSync(folder, {recursive: true})
+        response_msg = "The folder " + "\"" + path + "\"" +"for user"+ " is safely removed";
+    } catch (error) {
+        response_msg = error;
+    }
+    console.log("delete folder " + response_msg)
+    return response_msg;
+}
 
 module.exports = router;
