@@ -11,7 +11,10 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-router.use(cors());
+router.use(cors({
+    origin: ['*'],
+    credentials: true
+}));
 
 router.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -28,15 +31,6 @@ router.get('/me', VerifyToken, function(req, res, next) {
 });
 
 router.post('/login',function (req, res) {
-    request(
-        { url: 'https://filefront.isik.dk/api/auth/login' },
-        (error, response, body) => {
-            if (error || response.statusCode !== 200) {
-                return res.status(500).json({ type: 'error', message: err.message });
-            }
-
-            res.json(JSON.parse(body));
-
     User.findOne({email: req.body.email}, function (err, user) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
@@ -52,8 +46,6 @@ router.post('/login',function (req, res) {
         });
         res.status(200).send({token:token, files:'/api/files/', id: user._id, user:'/api/auth/me'});
     });
-        }
-    )
 });
 
 router.get('/helloworld', VerifyToken, function(req, res) {
