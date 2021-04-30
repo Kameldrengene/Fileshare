@@ -49,10 +49,10 @@ router.use(cors())
             return res.end("Error uploading file.");
         }
 
-
         res.end("File is uploaded successfully!");
     });
 });
+
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
  */
