@@ -13,7 +13,6 @@ var User = require('../user/User');
 
 router.use(cors({
     origin: ['*'],
-    credentials: true
 }));
 
 router.use((req, res, next) => {
