@@ -11,7 +11,17 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-router.use(cors())
+var corsOptions = {
+    origin: '*',
+    optionsSuccessStatus: 200 // For legacy browser support
+}
+
+router.use(cors(corsOptions));
+
+router.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    next();
+});
 
 router.get('/me', VerifyToken, function(req, res, next) {
 
@@ -22,7 +32,7 @@ router.get('/me', VerifyToken, function(req, res, next) {
     });
 });
 
-router.post('/login', function (req, res) {
+router.post('/login',function (req, res) {
     User.findOne({email: req.body.email}, function (err, user) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
