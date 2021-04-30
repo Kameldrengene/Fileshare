@@ -22,7 +22,7 @@ router.get('/me', VerifyToken, function(req, res, next) {
     });
 });
 
-router.post('/login', function (req, res) {
+router.post('/login', cors(),function (req, res) {
     User.findOne({email: req.body.email}, function (err, user) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
