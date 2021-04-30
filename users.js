@@ -21,17 +21,48 @@ router.use(cors())
 router.use(bodyParser.json());
 
 router.get("/users", VerifyToken, function (req, res) {
+    const contents = [];
+
+    //  Find users
     User.find({}, function (err, users) {
         if (err) return res.status(500).send("There was a problem finding the users.");
-        res.status(200).send(users);
+
+        users.forEach(function(item, index) {
+            let user = JSON.parse(JSON.stringify(item));
+
+            //  REST Level 3
+            user.options = {
+                getUser: "/api/user/" + item._id,
+                updateUser: "/api/user/update/" + + item._id,
+                deleteUser: "/api/user/delete/" + item._id,
+                createNewUser: "/api/user/create",
+            };
+            contents.push(user);
+        });
+
+        res.status(200).send(contents);
     });
 });
 
 router.get("/:id", VerifyToken, function (req, res) {
+
+    //  Check rights
+    if(req.userId != req.params.id) return res.status(401).send("No permission to show user");
+
+    //  Find user
     User.findById(req.params.id, function (err, user) {
         if (err) return res.status(500).send("There was a problem finding the user.");
         if (!user) return res.status(404).send("No user found.");
-        res.status(200).send(user);
+        let userCopy = JSON.parse(JSON.stringify(user));
+
+        //  REST Level 3
+        userCopy.options = {
+            updateUser: "/api/user/update/" + user._id,
+            deleteUser: "/api/user/delete/" + user._id,
+            createNewUser: "/api/user/create",
+        }
+
+        res.status(200).send(userCopy);
     });
 });
 
@@ -61,10 +92,24 @@ router.post('/create', function (req, res) {
                 //Create a folder for user
                 var folderPath = createfolder(user._id);
 
-                res.status(200).send({auth: true, token: token, id: user._id,folder: folderPath});
+                //todo her sendes altid 200 - hvad hvis der sker fejl i createFolder?
+            res.status(200).send({
+                auth: true,
+                token: token,
+                id: user._id,
+                folder: folderPath,
+
+                //  REST Level 3
+                options: {
+                    getUser: "/api/user/" + user._id,
+                    updateUser: "/api/user/update/" + user._id,
+                    deleteUser: "/api/user/delete/" + user._id,
+                }
             });
+        });
     });
 });
+
 
 function createfolder(user_id) {
     const folderName = './Users/' + user_id;
@@ -96,24 +141,49 @@ function deletefolder(user_id) {
 }
 
 router.post("/update/:id", VerifyToken, function (req, res) {
+
+    //  Check rights
+    if(req.userId != req.params.id) return res.status(401).send("No permission to update user");
+
+    //  Encrypt password
     var hashedPassword = bcrypt.hashSync(req.body.password, 8);
     req.body.password = hashedPassword;
+
+    //  Find and update
     User.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, user) {
         if (err) return res.status(500).send("There was a problem updating the user.");
-        res.status(200).send(user);
+        let userCopy = JSON.parse(JSON.stringify(user));
+
+        //  REST Level 3
+        userCopy.options = {
+            getUser: "/api/user/" + user._id,
+            deleteUser: "/api/user/delete/" + user._id,
+            createNewUser: "/api/user/create",
+        };
+
+        res.status(200).send(userCopy);
     });
 });
 
 router.post("/delete/:id", VerifyToken, function (req, res) {
-    if(req.userId != req.params.id) return res.status(401).send("No permission to delete user");
+
+    //  Check rights
+    if(req.userId != req.params.id) return res.status(401).send("No permission to delete user.");
+
+    //  Find and remove
     User.findByIdAndRemove(req.params.id, function (err, user) {
         if (err || !user) return res.status(500).send("There was a problem deleting the user.");
         deletefolder(req.params.id);
-        res.status(200).send("User: " + user.name + " was deleted.");
+
+        //REST Level 3
+        res.status(200).send({
+            action: "User: " + user.name + " (" + user._id + ") " + " was deleted.",
+            options: {
+                createNewUser: "/api/user/create",
+            }
+        });
     });
 })
 
 module.exports = router;
-
-
 
