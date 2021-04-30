@@ -20,15 +20,15 @@ router.use(cors())
     for await (const entry of readdirp('./Users/'+req.userId,{type: 'files_directories'})) {
         var stats = fs.lstatSync(entry.fullPath);
         if(stats.isDirectory()){
-            contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path,
-                    Rename: "/api/files/rename/"+"?oldpath="+entry.path+"&?newname=name",
-                    Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname",
-                    CreateDirectory: "/api/files/create/"+"?path="+entry.path+"&?name=directoryname"},
+            contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path+'/',
+                    Rename: "/api/files/rename/"+"?oldpath="+entry.path+'/'+"&newname=name",
+                    Move: "/api/files/move/"+"?oldpath="+entry.path+'/'+"&newdirectorypath=somefolderpath",
+                    CreateDirectory: "/api/files/create/"+"?path="+entry.path+'/'+"&name=directoryname"},
             })
         }else
         contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
-                Rename: "/api/files/rename/"+"?path="+entry.path+"&?newname=name",
-                Move: "/api/files/move/"+"?path="+entry.path+"&?newpath=newpathname"}})
+                Rename: "/api/files/rename/"+"?oldpath="+entry.path+"&newname=name",
+                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath"}})
     }
     res.status(200).json(contents);
 });
@@ -62,22 +62,22 @@ router.use(cors())
  router.post('/createdirectory/',VerifyToken,function (req,res){
      var path
      if(!req.query.path) // if you want to create the folder inside root.
-         path = './Users/'+req.userId+'/'+req.query.name
+         path = './Users/'+req.userId+'/'+req.query.name+'/'
      else
-         path = './Users/'+req.userId+'/'+req.query.path+'/'+req.query.name
+         path = './Users/'+req.userId+'/'+req.query.path+req.query.name+'/'
      const isdone = createDirectory(path)
      var response
      if(isdone){
-         response = "Folder" +req.query.name+" created successfully"
+         response = "Folder: " +req.query.name+" created successfully"
          res.status(200).json({response: response,options:{
              upload: "/api/files/upload/"+"?path="+path,
              delete: "/api/files/delete/"+"?path="+path,
-                 Rename: "/api/files/rename/"+"?oldpath="+path+"&?newpath=newpath",
-                 Move: "/api/files/move/"+"?path="+path+"&?newpath=newpathname"}})
+                 Rename: "/api/files/rename/"+"?oldpath="+path+"&newpath=newpath",
+                 Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath"}})
      }
      else if(!isdone){
          response = "error creating the folder"
-         res.json({response: response})
+         res.status(204).json({response: response})
      }
 })
 
@@ -106,7 +106,7 @@ router.post('/rename/',VerifyToken,function (req,res){
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + newpath,
-                    Move: "/api/files/move/" + "?path=" + newpath + "&?newpath=newpathname"
+                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath"
                 }
             })
         }else {
@@ -114,7 +114,7 @@ router.post('/rename/',VerifyToken,function (req,res){
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + newpath,
-                    Move: "/api/files/move/" + "?path=" + newpath + "&?newpath=newpathname",
+                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath",
                     CreateDirectory: "/api/files/create/" + "?path=" + newpath + "&?name=directoryname"
                 }
             })
@@ -128,14 +128,21 @@ router.post('/rename/',VerifyToken,function (req,res){
 
 router.post('/move/',VerifyToken,function (req,res){
     var oldpath = './Users/'+req.userId+'/'+req.query.oldpath
-    var status = fs.statSync(oldpath)
+    var nofile = false
+    try {
+        var status = fs.statSync(oldpath)
+    }catch (err){
+        nofile = true;
+        res.status(500).send("no such file or directory exists")
+    }
+
     var index
     if(status.isDirectory())
         index = oldpath.lastIndexOf('/',oldpath.lastIndexOf('/')-1)
     else
         index = oldpath.lastIndexOf('/')
     var name = oldpath.substring(index+1,oldpath.length)
-    var newpath = './Users/'+req.userId+'/'+req.query.newdirectory+name
+    var newpath = './Users/'+req.userId+'/'+req.query.newdirectorypath+name
     var response
     var options = []
     if(rename(oldpath,newpath,res)){
@@ -157,11 +164,11 @@ router.post('/move/',VerifyToken,function (req,res){
                 }
             })
         }
-        res.status(200).json(options)
+        if(!nofile) res.status(200).json(options)
     }
     else {
-        if(status.isFile()) res.render("Error moving the file")
-        else res.render("Error moving the folder")
+        if(status.isFile()) res.status(204).render("Error moving the file")
+        else res.status(204).render("Error moving the folder")
     }
 })
 
@@ -176,7 +183,8 @@ router.post('/move/',VerifyToken,function (req,res){
      else if(status.isDirectory()){
          response = deletefolderSync(path)
      }
-     res.status(200).send(response)
+     if(!response.err) res.status(200).send(response)
+     else res.send(response)
 })
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
@@ -193,6 +201,7 @@ function deletefileSync(filepath){
         reponse = "Successfully deleted the file."
     } catch(err) {
         reponse = err;
+        console.log(err)
     }
     return reponse
 }
@@ -205,7 +214,6 @@ function deletefolderSync(path) {
     } catch (error) {
         response_msg = error;
     }
-    console.log("delete folder " + response_msg)
     return response_msg;
 }
 
