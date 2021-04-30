@@ -11,9 +11,12 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-router.use(cors({
-    origin: ['*'],
-}));
+var corsOptions = {
+    origin: '*',
+    optionsSuccessStatus: 200 // For legacy browser support
+}
+
+router.use(cors(corsOptions));
 
 router.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
