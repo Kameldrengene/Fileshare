@@ -13,6 +13,11 @@ var User = require('../user/User');
 
 router.use(cors());
 
+router.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    next();
+});
+
 router.get('/me', VerifyToken, function(req, res, next) {
 
     User.findById(req.userId,{password: 0}, function (err, user) {
