@@ -11,7 +11,16 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-router.options('*',cors())
+var whitelist = ['http://filefront.isik.dk', 'http://api.isik.dk']
+var corsOptionsDelegate = function (req, callback) {
+    var corsOptions;
+    if (whitelist.indexOf(req.header('Origin')) !== -1) {
+        corsOptions = { origin: true } // reflect (enable) the requested origin in the CORS response
+    } else {
+        corsOptions = { origin: false } // disable CORS for this request
+    }
+    callback(null, corsOptions) // callback expects two parameters: error and options
+}
 
 router.get('/me', VerifyToken, function(req, res, next) {
 
@@ -22,7 +31,7 @@ router.get('/me', VerifyToken, function(req, res, next) {
     });
 });
 
-router.post('/login', cors(),function (req, res) {
+router.post('/login', cors(corsOptionsDelegate),function (req, res) {
     User.findOne({email: req.body.email}, function (err, user) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
