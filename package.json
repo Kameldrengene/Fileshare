@@ -24,7 +24,8 @@
     "express": "^4.16.2",
     "fs-extra": "^9.1.0",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.0.1",
+    "lxd": "^1.0.0",
+    "mongoose": "^5.12.6",
     "multer": "^1.4.2",
     "readdirp": "^3.6.0"
   }
