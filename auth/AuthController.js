@@ -11,17 +11,7 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-var corsOptions = {
-    origin: '*',
-    optionsSuccessStatus: 200 // For legacy browser support
-}
-
-router.use(cors(corsOptions));
-
-router.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    next();
-});
+router.use(cors());
 
 router.get('/me', VerifyToken, function(req, res, next) {
 
@@ -41,7 +31,6 @@ router.post('/login',function (req, res) {
 
         if(!bcrypt.compareSync(req.body.password, user.password))
             return res.status(401).send({Response:'Incorrect credentials!'});
-
 
         var token = jwt.sign({id: user._id}, config.secret, {
             expiresIn: 86400 // expires in 24 hours
