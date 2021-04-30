@@ -11,7 +11,7 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-router.use(cors())
+router.options('*',cors())
 
 router.get('/me', VerifyToken, function(req, res, next) {
 
