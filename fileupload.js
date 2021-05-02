@@ -23,7 +23,7 @@ router.use(cors())
             contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path+'/',
                     Rename: "/api/files/rename/"+"?oldpath="+entry.path+'/'+"&newname=name",
                     Move: "/api/files/move/"+"?oldpath="+entry.path+'/'+"&newdirectorypath=somefolderpath/",
-                    CreateDirectory: "/api/files/create/"+"?path="+entry.path+'/'+"&name=directoryname"},
+                    CreateDirectory: "/api/files/createdirectory/"+"?path="+entry.path+'/'+"&name=directoryname"},
             })
         }else
         contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
@@ -60,20 +60,25 @@ router.use(cors())
 });
 
  router.post('/createdirectory/',VerifyToken,function (req,res){
-     var path
-     if(!req.query.path) // if you want to create the folder inside root.
-         path = './Users/'+req.userId+'/'+req.query.name+'/'
+     var path, outpath
+     if(!req.query.path) { // if you want to create the folder inside root.
+         path = './Users/' + req.userId + '/' + req.query.name + '/'
+         outpath = req.query.name + '/'
+     }
      else
-         path = './Users/'+req.userId+'/'+req.query.path+req.query.name+'/'
+     {
+         outpath = req.query.path + req.query.name + '/'
+         path = './Users/' + req.userId + '/' + req.query.path + req.query.name + '/'
+     }
      const isdone = createDirectory(path)
      var response
      if(isdone){
          response = "Folder: " +req.query.name+" created successfully"
          res.status(200).json({response: response,options:{
-             upload: "/api/files/upload/"+"?path="+path,
-             delete: "/api/files/delete/"+"?path="+path,
-                 Rename: "/api/files/rename/"+"?oldpath="+path+"&newpath=newpath",
-                 Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/"}})
+             upload: "/api/files/upload/"+"?path="+outpath,
+             delete: "/api/files/delete/"+"?path="+outpath,
+                 Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=somename",
+                 Move: "/api/files/move/"+"?oldpath="+outpath+"&newdirectorypath=somefolderpath/"}})
      }
      else if(!isdone){
          response = "error creating the folder"
@@ -121,9 +126,9 @@ router.post('/rename/',VerifyToken,function (req,res){
             response = "Folder successfully renamed to "+newname
             options.push({
                 response: response, options: {
-                    delete: "/api/files/delete/" + "?path=" + newpath,
-                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath/",
-                    CreateDirectory: "/api/files/create/" + "?path=" + newpath + "&?name=directoryname"
+                    delete: "/api/files/delete/" + "?path=" + newpath+'/',
+                    Move: "/api/files/move/"+"?oldpath="+newpath+'/'+"&newdirectorypath=somefolderpath/",
+                    CreateDirectory: "/api/files/createdirectory/" + "?path=" + newpath+'/' + "&name=directoryname"
                 }
             })
         }
@@ -156,25 +161,26 @@ router.post('/move/',VerifyToken,function (req,res){
         index = oldpath.lastIndexOf('/')
     var name = oldpath.substring(index+1,oldpath.length)
     var newpath = './Users/'+req.userId+'/'+req.query.newdirectorypath+name
+    var outpath = req.query.newdirectorypath+name
     var response
     var options = []
     const filemoved = rename(oldpath,newpath)
     if(filemoved.done){
         if (status.isFile()) {
-            response = "File successfully moved to "+newpath
+            response = "File successfully moved to "+outpath
             options.push({
                 response: response, options: {
-                    delete: "/api/files/delete/" + "?path=" + newpath,
-                    Rename: "/api/files/rename/"+"?oldpath="+newpath+"&?newname=name"
+                    delete: "/api/files/delete/" + "?path=" + outpath,
+                    Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name"
                 }
             })
         }else {
-            response = "Folder successfully moved to "+newpath
+            response = "Folder successfully moved to "+outpath
             options.push({
                 response: response, options: {
-                    delete: "/api/files/delete/" + "?path=" + newpath,
-                    Rename: "/api/files/rename/"+"?oldpath="+newpath+"&?newname=name",
-                    CreateDirectory: "/api/files/create/" + "?path=" + newpath + "&?name=directoryname"
+                    delete: "/api/files/delete/" + "?path=" + outpath,
+                    Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name",
+                    CreateDirectory: "/api/files/createdirectory/" + "?path=" + outpath + "&name=directoryname"
                 }
             })
         }
