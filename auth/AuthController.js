@@ -11,7 +11,7 @@ var config = require('../config');
 var VerifyToken = require('./VerifyToken');
 var User = require('../user/User');
 
-router.use(cors())
+router.use(cors());
 
 router.get('/me', VerifyToken, function(req, res, next) {
 
@@ -22,7 +22,7 @@ router.get('/me', VerifyToken, function(req, res, next) {
     });
 });
 
-router.post('/login', function (req, res) {
+router.post('/login',function (req, res) {
     User.findOne({email: req.body.email}, function (err, user) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
@@ -31,7 +31,6 @@ router.post('/login', function (req, res) {
 
         if(!bcrypt.compareSync(req.body.password, user.password))
             return res.status(401).send({Response:'Incorrect credentials!'});
-
 
         var token = jwt.sign({id: user._id}, config.secret, {
             expiresIn: 86400 // expires in 24 hours
