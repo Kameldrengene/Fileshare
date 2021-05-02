@@ -22,13 +22,13 @@ router.use(cors())
         if(stats.isDirectory()){
             contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path+'/',
                     Rename: "/api/files/rename/"+"?oldpath="+entry.path+'/'+"&newname=name",
-                    Move: "/api/files/move/"+"?oldpath="+entry.path+'/'+"&newdirectorypath=somefolderpath",
+                    Move: "/api/files/move/"+"?oldpath="+entry.path+'/'+"&newdirectorypath=somefolderpath/",
                     CreateDirectory: "/api/files/create/"+"?path="+entry.path+'/'+"&name=directoryname"},
             })
         }else
         contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
                 Rename: "/api/files/rename/"+"?oldpath="+entry.path+"&newname=name",
-                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath"}})
+                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath/"}})
     }
     res.status(200).json(contents);
 });
@@ -73,7 +73,7 @@ router.use(cors())
              upload: "/api/files/upload/"+"?path="+path,
              delete: "/api/files/delete/"+"?path="+path,
                  Rename: "/api/files/rename/"+"?oldpath="+path+"&newpath=newpath",
-                 Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath"}})
+                 Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/"}})
      }
      else if(!isdone){
          response = "error creating the folder"
@@ -83,30 +83,38 @@ router.use(cors())
 
 router.post('/rename/',VerifyToken,function (req,res){
     const oldpath = './Users/'+req.userId+'/'+req.query.oldpath
-    var status = fs.statSync(oldpath)
+    var status
+    let fileexists = true;
+    try {
+        status = fs.statSync(oldpath)
+    }catch (err){
+        fileexists = false;
+        res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
+    }
     const newname = req.query.newname
-    var newpath
+    let newpath;
     if(status.isDirectory()) {
-        var index = oldpath.lastIndexOf('/', oldpath.lastIndexOf('/') - 1)
-        var folderpath = oldpath.substring(0,index)
-        newpath = folderpath + '/' +newname
+            const index = oldpath.lastIndexOf('/', oldpath.lastIndexOf('/') - 1);
+            const folderpath = oldpath.substring(0, index);
+            newpath = folderpath + '/' +newname
     }
     else {
-        var indexofname = oldpath.lastIndexOf('/')
-        var oldfileindex = oldpath.lastIndexOf('.')
-        var filetype = oldpath.substring(oldfileindex,oldpath.length)
-        var filepath = oldpath.substring(0,indexofname)
-        newpath = filepath + '/' +newname+filetype
+            const indexofname = oldpath.lastIndexOf('/');
+            const oldfileindex = oldpath.lastIndexOf('.');
+            const filetype = oldpath.substring(oldfileindex, oldpath.length);
+            const filepath = oldpath.substring(0, indexofname);
+            newpath = filepath + '/' +newname+filetype
     }
     var response = 'no response'
     var options = []
-    if(rename(oldpath, newpath)) {
+    const fileRenamed = rename(oldpath, newpath)
+    if(fileRenamed.done) {
         if (status.isFile()) {
             response = "File successfully renamed to "+newname
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + newpath,
-                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath"
+                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath/"
                 }
             })
         }else {
@@ -114,18 +122,23 @@ router.post('/rename/',VerifyToken,function (req,res){
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + newpath,
-                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath",
+                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath/",
                     CreateDirectory: "/api/files/create/" + "?path=" + newpath + "&?name=directoryname"
                 }
             })
         }
-        res.status(200).json(options)
+        if(fileexists)res.status(200).json(options)
     }else {
-        if(status.isFile()) res.end("Error renaming the file")
-        else res.status(406).end("Error renaming the folder")
+        if(fileexists) {
+            if (status.isFile()) res(406).end(fileRenamed.error)
+            else res.status(406).end(fileRenamed.error)
+        }
     }
 })
 
+/**
+ * Husk at tilføje '/' til sidst. når det gælder en directory path
+ */
 router.post('/move/',VerifyToken,function (req,res){
     var oldpath = './Users/'+req.userId+'/'+req.query.oldpath
     var nofile = false
@@ -145,7 +158,8 @@ router.post('/move/',VerifyToken,function (req,res){
     var newpath = './Users/'+req.userId+'/'+req.query.newdirectorypath+name
     var response
     var options = []
-    if(rename(oldpath,newpath,res)){
+    const filemoved = rename(oldpath,newpath)
+    if(filemoved.done){
         if (status.isFile()) {
             response = "File successfully moved to "+newpath
             options.push({
@@ -167,8 +181,10 @@ router.post('/move/',VerifyToken,function (req,res){
         if(!nofile) res.status(200).json(options)
     }
     else {
-        if(status.isFile()) res.status(204).render("Error moving the file")
-        else res.status(204).render("Error moving the folder")
+        if(!nofile) {
+            if (status.isFile()) res.status(406).render("Error moving the file" + filemoved.error)
+            else res.status(406).render("Error moving the folder"+filemoved.error)
+        }
     }
 })
 
@@ -231,16 +247,19 @@ function createDirectory(path){
     return response
 }
 
-function rename(oldpath,newpath,res){
+function rename(oldpath,newpath){
+    var rename = {
+        done: true,
+        error: null
+    }
     try {
         fs.renameSync(oldpath,newpath)
-        return true
+        return rename
     }catch (err){
         console.log(err)
-        res.type('text/plain')
-        res.status(500)
-        res.send('internal error'+err)
-        return false
+        rename.done = false
+        rename.error = err
+        return rename
     }
 }
 module.exports = router;
