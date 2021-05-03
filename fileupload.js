@@ -213,13 +213,14 @@ router.post('/move/',VerifyToken,function (req,res){
  */
  router.get('/download/',VerifyToken,function(req,res){
      const path = './Users/'+req.userId+'/'+req.query.path
-     var status = fs.statSync(path)
-     if(status.isFile()){
-         res.download("./Users/"+req.userId+'/'+req.query.path);
-     }else{
-         res.status(404).send("No such file")
+     try{
+         var status = fs.statSync(path)
+         if(status.isFile()){
+             res.download("./Users/"+req.userId+'/'+req.query.path);
+         }
+     }catch (e) {
+         res.status(404).send(e)
      }
-
 });
 
 function deletefileSync(filepath){
