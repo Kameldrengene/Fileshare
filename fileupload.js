@@ -88,6 +88,7 @@ router.use(cors())
 
 router.post('/rename/',VerifyToken,function (req,res){
     const oldpath = './Users/'+req.userId+'/'+req.query.oldpath
+    const subpath = '/'+req.query.oldpath
     var status
     let fileexists = true;
     try {
@@ -97,20 +98,27 @@ router.post('/rename/',VerifyToken,function (req,res){
         res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
     }
     const newname = req.query.newname
-    let newpath;
+    let newpath,outpath;
     if(status.isDirectory()) {
-            const index = oldpath.lastIndexOf('/', oldpath.lastIndexOf('/') - 1);
-            const folderpath = oldpath.substring(0, index);
-            newpath = folderpath + '/' +newname
+        const index_out = subpath.lastIndexOf('/', subpath.lastIndexOf('/') - 1);
+        const index = oldpath.lastIndexOf('/', oldpath.lastIndexOf('/') - 1);
+        outpath = subpath.substring(0,index_out)+'/'+newname+'/'
+        const folderpath = oldpath.substring(0,index);
+        newpath = folderpath + '/' +newname
     }
     else {
-            const indexofname = oldpath.lastIndexOf('/');
-            const oldfileindex = oldpath.lastIndexOf('.');
-            const filetype = oldpath.substring(oldfileindex, oldpath.length);
-            const filepath = oldpath.substring(0, indexofname);
-            newpath = filepath + '/' +newname+filetype
+        const indexname_out = subpath.lastIndexOf('/')
+        const oldfileindex_out = subpath.lastIndexOf('.')
+        const filetype_out = subpath.substring(oldfileindex_out,subpath.length)
+        outpath = subpath.substring(0,indexname_out)+'/'+newname+filetype_out
+        const indexofname = oldpath.lastIndexOf('/');
+        const oldfileindex = oldpath.lastIndexOf('.');
+        const filetype = oldpath.substring(oldfileindex, oldpath.length);
+        const filepath = oldpath.substring(0, indexofname);
+        newpath = filepath + '/' +newname+filetype
     }
     var response = 'no response'
+    const path = outpath.substring(1,outpath.length)
     var options = []
     const fileRenamed = rename(oldpath, newpath)
     if(fileRenamed.done) {
@@ -118,17 +126,17 @@ router.post('/rename/',VerifyToken,function (req,res){
             response = "File successfully renamed to "+newname
             options.push({
                 response: response, options: {
-                    delete: "/api/files/delete/" + "?path=" + newpath,
-                    Move: "/api/files/move/"+"?oldpath="+newpath+"&newdirectorypath=somefolderpath/"
+                    delete: "/api/files/delete/" + "?path=" + path,
+                    Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/"
                 }
             })
         }else {
             response = "Folder successfully renamed to "+newname
             options.push({
                 response: response, options: {
-                    delete: "/api/files/delete/" + "?path=" + newpath+'/',
-                    Move: "/api/files/move/"+"?oldpath="+newpath+'/'+"&newdirectorypath=somefolderpath/",
-                    CreateDirectory: "/api/files/createdirectory/" + "?path=" + newpath+'/' + "&name=directoryname"
+                    delete: "/api/files/delete/" + "?path=" + path,
+                    Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/",
+                    CreateDirectory: "/api/files/createdirectory/" + "?path=" + path + "&name=directoryname"
                 }
             })
         }
@@ -146,25 +154,35 @@ router.post('/rename/',VerifyToken,function (req,res){
  */
 router.post('/move/',VerifyToken,function (req,res){
     var oldpath = './Users/'+req.userId+'/'+req.query.oldpath
-    var nofile = false
+    var status
     try {
-        var status = fs.statSync(oldpath)
+         status = fs.statSync(oldpath)
     }catch (err){
-        nofile = true;
-        res.status(500).send("no such file or directory exists")
+        res.status(406).send("Error: ENOENT: no such file or directory. Provide correct old path")
+        return
     }
-
-    var index
-    if(status.isDirectory())
-        index = oldpath.lastIndexOf('/',oldpath.lastIndexOf('/')-1)
-    else
-        index = oldpath.lastIndexOf('/')
-    var name = oldpath.substring(index+1,oldpath.length)
+    console.log(status)
+    try {
+        fs.statSync('./Users/'+req.userId+'/'+req.query.newdirectorypath)
+    }catch (err){
+        res.status(406).send("Error: ENOENT: no such file or directory. Provide correct new directory path")
+        return;
+    }
+    let index
+    if(status.isDirectory())index = oldpath.lastIndexOf('/',oldpath.lastIndexOf('/')-1)+1
+    else index = oldpath.lastIndexOf('/')+1
+    var name = oldpath.substring(index,oldpath.length)
+    console.log(name)
     var newpath = './Users/'+req.userId+'/'+req.query.newdirectorypath+name
     var outpath = req.query.newdirectorypath+name
     var response
     var options = []
-    const filemoved = rename(oldpath,newpath)
+    let filemoved
+    try {
+        filemoved = rename(oldpath,newpath)
+    }catch (err){
+        res.status(406).send("nothing")
+    }
     if(filemoved.done){
         if (status.isFile()) {
             response = "File successfully moved to "+outpath
@@ -184,13 +202,11 @@ router.post('/move/',VerifyToken,function (req,res){
                 }
             })
         }
-        if(!nofile) res.status(200).json(options)
+        res.status(200).json(options)
     }
     else {
-        if(!nofile) {
-            if (status.isFile()) res.status(406).render("Error moving the file" + filemoved.error)
-            else res.status(406).render("Error moving the folder"+filemoved.error)
-        }
+        if (status.isFile()) res.status(500).render("Error moving the file" + filemoved.done)
+        else res.status(500).render("Error moving the folder"+filemoved.done)
     }
 })
 
