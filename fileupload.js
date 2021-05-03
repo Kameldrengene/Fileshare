@@ -211,7 +211,7 @@ router.post('/move/',VerifyToken,function (req,res){
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
  */
- router.get('/download/',VerifyToken,function(req,res){
+ router.post('/download/',VerifyToken,function(req,res){
      const path = './Users/'+req.userId+'/'+req.query.path
      try{
          var status = fs.statSync(path)
