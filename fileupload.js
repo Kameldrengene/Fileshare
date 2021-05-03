@@ -227,8 +227,19 @@ router.post('/move/',VerifyToken,function (req,res){
 /**
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
  */
- router.get('/download/:file',VerifyToken,function(req,res){
-    res.download("./Users/"+req.userId+'/'+req.params.file);
+ router.post('/download/',VerifyToken,function(req,res){
+     const path = './Users/'+req.userId+'/'+req.query.path
+     try{
+         var status = fs.statSync(path)
+         if(status.isFile()){
+             res.download("./Users/"+req.userId+'/'+req.query.path);
+         }
+         if(status.isDirectory()){
+             res.status(400).send("Downloading a folder not allowed.")
+         }
+     }catch (e) {
+         res.status(404).send(e)
+     }
 });
 
 function deletefileSync(filepath){
