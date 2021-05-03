@@ -37,7 +37,7 @@ router.use(cors())
  * Multer behandler form data. Jeg har forklaret lidt om form data i status rapport.
  * Multer sat til at gemme data på harddisk og gemmer i ./uploads mappen men orginal fil navn
  */
- router.post('/upload',VerifyToken,function(req,res){
+ router.post('/upload',cors() ,VerifyToken,function(req,res){
 
      const path = req.query.path
     var storage =   multer.diskStorage({
