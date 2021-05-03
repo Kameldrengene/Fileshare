@@ -218,6 +218,9 @@ router.post('/move/',VerifyToken,function (req,res){
          if(status.isFile()){
              res.download("./Users/"+req.userId+'/'+req.query.path);
          }
+         if(status.isDirectory()){
+             res.status(400).send("Downloading a folder not allowed.")
+         }
      }catch (e) {
          res.status(404).send(e)
      }
