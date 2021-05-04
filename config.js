@@ -1,4 +1,5 @@
 // config.js
 module.exports = {
-    'secret': 'kameldreng'
+    'secret': 'kameldreng',
+    'baseurl': 'localhost:3000'
   };

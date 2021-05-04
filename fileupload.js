@@ -3,9 +3,14 @@ var multer  =   require('multer');
 var readdirp = require('readdirp');
 const fs_extra = require('fs-extra');
 const fs = require('fs');
+const Cryptr = require('cryptr')
+var jwt = require('jsonwebtoken');
+const nanoid = require('nanoid')
 var cors = require('cors');
 var router = express.Router();
+const config = require('./config');
 var User = require('./user/User');
+var urlshema = require('./url')
 var VerifyToken = require('./auth/VerifyToken');
 
 router.use(cors())
@@ -241,7 +246,52 @@ router.post('/move/',VerifyToken,function (req,res){
          res.status(404).send(e)
      }
 });
-
+router.post('/globaldownload/',VerifyToken, async function (req,res){
+    const pathparams = './Users/'+req.userId+'/'+req.query.path
+    try{
+        var status = fs.statSync(pathparams)
+        if(status.isFile()){
+            let shortid = nanoid.nanoid()
+            console.log(shortid)
+            try {
+                let url = await urlshema.findOne({pathparams:pathparams},function (err,docs) {
+                    if(err) return res.status(500).send("error accessing mongodb")
+                    else {
+                        if(docs!=null) shortid = docs.shortid
+                        console.log(docs)
+                    }
+                })
+                if(url){
+                    console.log("inside founded url")
+                    const link = config.baseurl+'/'+shortid
+                    return res.status(200).json(link)
+                }else
+                {
+                    console.log("inside not founded url")
+                    const link = config.baseurl+'/'+shortid
+                    const url = new urlshema({
+                        shortid,
+                        pathparams,
+                        createdAt: new Date()
+                    })
+                    url.save(function (err,doc) {
+                        if (err) return res.send(500).send("could not save object in database")
+                        return res.status(200).json(link)
+                    })
+                }
+            }catch (err){
+               return res.status(500).json('internal server error')
+            }
+        }
+        else if(status.isDirectory()){
+            console.log("inside dir")
+            return res.status(203).json({response:"Generation of link for folders not allowed"})
+        }
+    }catch (e) {
+        console.log("inside catch e")
+        return res.status(404).send(e)
+    }
+})
 function deletefileSync(filepath){
     const path= filepath
     var reponse
@@ -295,4 +345,5 @@ function rename(oldpath,newpath){
         return rename
     }
 }
+
 module.exports = router;

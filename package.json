@@ -22,12 +22,15 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.2",
     "cors": "^2.8.5",
+    "cryptr": "^6.0.2",
     "express": "^4.16.2",
     "fs-extra": "^9.1.0",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.6.6",
     "mongoose": "^5.12.5",
+    "mongoose-ttl": "^0.0.3",
     "multer": "^1.4.2",
+    "nanoid": "^3.1.22",
     "readdirp": "^3.6.0"
   }
 }
