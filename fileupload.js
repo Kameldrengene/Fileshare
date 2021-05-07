@@ -28,12 +28,15 @@ router.use(cors())
             contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path+'/',
                     Rename: "/api/files/rename/"+"?oldpath="+entry.path+'/'+"&newname=name",
                     Move: "/api/files/move/"+"?oldpath="+entry.path+'/'+"&newdirectorypath=somefolderpath/",
-                    CreateDirectory: "/api/files/createdirectory/"+"?path="+entry.path+'/'+"&name=directoryname"},
+                    CreateDirectory: "/api/files/createdirectory/"+"?path="+entry.path+'/'+"&name=directoryname",
+                    UploadFile:'/api/files/upload/?path='+entry.path},
             })
         }else
         contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
                 Rename: "/api/files/rename/"+"?oldpath="+entry.path+"&newname=name",
-                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath/"}})
+                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath/",
+                Download: "/api/files/download/?path="+entry.path,
+                GlobalUrl: '/api/files/globaldownload/?path='+entry.path}})
     }
     res.status(200).json(contents);
 });
@@ -62,10 +65,12 @@ router.use(cors())
         if(err) {
             return res.status(204).end("Error uploading file.");
         }
-        const fullpath = path+filename
+        const fullpath = path+'/'+filename
         res.status(200).json({Response:'File uploaded successfully',options:{delete: "/api/files/delete/"+"?path="+fullpath,
                 Rename: "/api/files/rename/"+"?oldpath="+fullpath+"&newname=somename",
-                Move: "/api/files/move/"+"?oldpath="+fullpath+"&newdirectorypath=somefolderpath/"}});
+                Move: "/api/files/move/"+"?oldpath="+fullpath+"&newdirectorypath=somefolderpath/",
+                Download: "/api/files/download/?path="+fullpath,
+                GlobalUrl: '/api/files/globaldownload/?path='+fullpath}});
     });
 });
 
@@ -87,8 +92,8 @@ router.use(cors())
          res.status(200).json({response: response,options:{
              upload: "/api/files/upload/"+"?path="+outpath,
              delete: "/api/files/delete/"+"?path="+outpath,
-                 Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=somename",
-                 Move: "/api/files/move/"+"?oldpath="+outpath+"&newdirectorypath=somefolderpath/"}})
+             Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=somename",
+             Move: "/api/files/move/"+"?oldpath="+outpath+"&newdirectorypath=somefolderpath/"}})
      }
      else if(!isdone){
          response = "error creating the folder"
@@ -137,13 +142,16 @@ router.post('/rename/',VerifyToken,function (req,res){
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + path,
-                    Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/"
+                    Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/",
+                    Download: "/api/files/download/?path="+path,
+                    GlobalUrl: '/api/files/globaldownload/?path='+path
                 }
             })
         }else {
             response = "Folder successfully renamed to "+newname
             options.push({
                 response: response, options: {
+                    upload: "/api/files/upload/"+"?path="+path,
                     delete: "/api/files/delete/" + "?path=" + path,
                     Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/",
                     CreateDirectory: "/api/files/createdirectory/" + "?path=" + path + "&name=directoryname"
@@ -199,13 +207,16 @@ router.post('/move/',VerifyToken,function (req,res){
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + outpath,
-                    Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name"
+                    Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name",
+                    Download: "/api/files/download/?path="+outpath,
+                    GlobalUrl: '/api/files/globaldownload/?path='+outpath
                 }
             })
         }else {
             response = "Folder successfully moved to "+outpath
             options.push({
                 response: response, options: {
+                    upload: "/api/files/upload/"+"?path="+outpath,
                     delete: "/api/files/delete/" + "?path=" + outpath,
                     Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name",
                     CreateDirectory: "/api/files/createdirectory/" + "?path=" + outpath + "&name=directoryname"
