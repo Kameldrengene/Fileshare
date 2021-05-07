@@ -142,7 +142,7 @@ function deletefolder(user_id) {
     return response_msg;
 }
 
-router.update("/update/:id", VerifyToken, function (req, res) {
+router.put("/update/:id", VerifyToken, function (req, res) {
 
     //  Check rights
     if(req.userId != req.params.id) return res.status(401).send("No permission to update Schemas");
