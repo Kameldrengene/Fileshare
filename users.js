@@ -152,7 +152,7 @@ router.put("/update/:id", VerifyToken, function (req, res) {
     req.body.password = hashedPassword;
 
     //  Find and update
-    User.findByIdAndUpdate(req.params.id, req.body, {new: true, password: 0}, function (err, user) {
+    User.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, user) {
         if (err) return res.status(500).send("There was a problem updating the Schemas.");
         let userCopy = JSON.parse(JSON.stringify(user));
 
@@ -163,6 +163,7 @@ router.put("/update/:id", VerifyToken, function (req, res) {
             createNewUser: "/api/user/create",
 	    getUserFiles: "/api/files",
         };
+        delete userCopy.password;
 
         res.status(200).send(userCopy);
     });
