@@ -50,7 +50,7 @@ router.get("/:id", VerifyToken, function (req, res) {
     if(req.userId != req.params.id) return res.status(401).send("No permission to show Schemas");
 
     //  Find Schemas
-    User.findById(req.params.id, function (err, user) {
+    User.findById(req.params.id, {password: 0}, function (err, user) {
         if (err) return res.status(500).send("There was a problem finding the Schemas.");
         if (!user) return res.status(404).send("No Schemas found.");
         let userCopy = JSON.parse(JSON.stringify(user));
@@ -152,7 +152,7 @@ router.put("/update/:id", VerifyToken, function (req, res) {
     req.body.password = hashedPassword;
 
     //  Find and update
-    User.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, user) {
+    User.findByIdAndUpdate(req.params.id, req.body, {new: true},{password: 0}, function (err, user) {
         if (err) return res.status(500).send("There was a problem updating the Schemas.");
         let userCopy = JSON.parse(JSON.stringify(user));
 
