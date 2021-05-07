@@ -1,5 +1,5 @@
 var app = require('./app');
-var port = process.env.PORT || 3000;
+const port = process.env.NODE_ENV === 'test' ? 3001 : 3000;
 var server = app.listen(port, function() {
   console.log('Express server listening on port ' + port);
 });
@@ -8,8 +8,9 @@ var server = app.listen(port, function() {
 app.get("/", function (request, response){
   response.status(200).send({
     options: { 
-      createNewUser: "/api/Schemas/create",
+      createNewUser: "/api/user/create",
       login: "api/auth/login"
     }
   });
 });
+module.exports = { app, server };

@@ -63,10 +63,10 @@ router.use(cors())
 
     upload(req,res,function(err,done) {
         if(err) {
-            return res.status(204).end("Error uploading file.");
+            return res.status(422).end("Error uploading file.");
         }
         const fullpath = path+'/'+filename
-        res.status(200).json({Response:'File uploaded successfully',options:{delete: "/api/files/delete/"+"?path="+fullpath,
+        res.status(201).json({Response:'File uploaded successfully',options:{delete: "/api/files/delete/"+"?path="+fullpath,
                 Rename: "/api/files/rename/"+"?oldpath="+fullpath+"&newname=somename",
                 Move: "/api/files/move/"+"?oldpath="+fullpath+"&newdirectorypath=somefolderpath/",
                 Download: "/api/files/download/?path="+fullpath,
@@ -89,7 +89,7 @@ router.use(cors())
      var response
      if(isdone){
          response = "Folder: " +req.query.name+" created successfully"
-         res.status(200).json({response: response,options:{
+         res.status(201).json({response: response,options:{
              upload: "/api/files/upload/"+"?path="+outpath,
              delete: "/api/files/delete/"+"?path="+outpath,
              Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=somename",
@@ -97,7 +97,7 @@ router.use(cors())
      }
      else if(!isdone){
          response = "error creating the folder"
-         res.status(204).json({response: response})
+         res.status(422).json({response: response})
      }
 })
 
@@ -158,7 +158,7 @@ router.put('/rename/',VerifyToken,function (req,res){
                 }
             })
         }
-        if(fileexists)res.status(200).json(options)
+        if(fileexists)res.status(201).json(options)
     }else {
         if(fileexists) {
             if (status.isFile()) res(406).end(fileRenamed.error)
@@ -223,7 +223,7 @@ router.put('/move/',VerifyToken,function (req,res){
                 }
             })
         }
-        res.status(200).json(options)
+        res.status(201).json(options)
     }
     else {
         if (status.isFile()) res.status(500).render("Error moving the file" + filemoved.done)
