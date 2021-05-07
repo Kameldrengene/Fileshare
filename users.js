@@ -60,6 +60,7 @@ router.get("/:id", VerifyToken, function (req, res) {
             updateUser: "/api/user/update/" + user._id,
             deleteUser: "/api/user/delete/" + user._id,
             createNewUser: "/api/user/create",
+	    getUserFiles: "/api/files",
         }
 
         res.status(200).send(userCopy);
@@ -104,6 +105,7 @@ router.post('/create', function (req, res) {
                     getUser: "/api/user/" + user._id,
                     updateUser: "/api/user/update/" + user._id,
                     deleteUser: "/api/user/delete/" + user._id,
+		    getUserFiles: "/api/files",
                 }
             });
         });
@@ -159,6 +161,7 @@ router.post("/update/:id", VerifyToken, function (req, res) {
             getUser: "/api/user/" + user._id,
             deleteUser: "/api/user/delete/" + user._id,
             createNewUser: "/api/user/create",
+	    getUserFiles: "/api/files",
         };
 
         res.status(200).send(userCopy);

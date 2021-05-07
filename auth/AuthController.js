@@ -13,15 +13,6 @@ var User = require('../user/User');
 
 router.use(cors());
 
-router.get('/me', VerifyToken, function(req, res, next) {
-
-    User.findById(req.userId,{password: 0}, function (err, user) {
-        if (err) return res.status(500).send("There was a problem finding the user.");
-        if (!user) return res.status(404).send("No user found.");
-        res.status(200).send(user);
-    });
-});
-
 router.post('/login',function (req, res) {
     User.findOne({email: req.body.email}, function (err, user) {
         if(err) return res.status(500).send('Server error!');
@@ -37,10 +28,6 @@ router.post('/login',function (req, res) {
         });
         res.status(200).send({token:token, files:'/api/files/', id: user._id, user:'/api/auth/me'});
     });
-});
-
-router.get('/helloworld', VerifyToken, function(req, res) {
-    res.status(200).send("Hello World!");
 });
 
 module.exports = router;
