@@ -9,15 +9,15 @@ const fs = require('fs');
 var bcrypt = require('bcryptjs');
 var config = require('../config');
 var VerifyToken = require('./VerifyToken');
-var User = require('../user/User');
+var User = require('../Schemas/User');
 
 router.use(cors());
 
 router.get('/me', VerifyToken, function(req, res, next) {
 
     User.findById(req.userId,{password: 0}, function (err, user) {
-        if (err) return res.status(500).send("There was a problem finding the user.");
-        if (!user) return res.status(404).send("No user found.");
+        if (err) return res.status(500).send("There was a problem finding the Schemas.");
+        if (!user) return res.status(404).send("No Schemas found.");
         res.status(200).send(user);
     });
 });
@@ -27,7 +27,7 @@ router.post('/login',function (req, res) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
         if(req.body.password == null) return res.status(400).send('Password missing!');
-        if(!user) return res.status(404).send('No user found!');
+        if(!user) return res.status(404).send('No Schemas found!');
 
         if(!bcrypt.compareSync(req.body.password, user.password))
             return res.status(401).send({Response:'Incorrect credentials!'});

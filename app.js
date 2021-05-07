@@ -7,7 +7,7 @@ var Users = require('./users');
 app.use('/api/auth', AuthController);
 app.use('/api/files', Fileupload);
 app.use('/api/user', Users);
-const urlschema = require('./url')
+const urlschema = require('./Schemas/url')
 
 app.get('/:shortid',async function (req,res) {
     const shortid = req.params.shortid
