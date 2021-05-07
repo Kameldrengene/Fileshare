@@ -152,7 +152,7 @@ router.put("/update/:id", VerifyToken, function (req, res) {
     req.body.password = hashedPassword;
 
     //  Find and update
-    User.findByIdAndUpdate(req.params.id, req.body, {new: true},{password: 0}, function (err, user) {
+    User.findByIdAndUpdate(req.params.id, req.body, {new: true, password: 0}, function (err, user) {
         if (err) return res.status(500).send("There was a problem updating the Schemas.");
         let userCopy = JSON.parse(JSON.stringify(user));
 
