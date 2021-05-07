@@ -12,7 +12,7 @@ var bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
 var VerifyToken = require('./auth/VerifyToken');
 var config = require('./config');
-var User = require('./user/User');
+var User = require('./Schemas/User');
 
 router.use(cors())
 //var server = app.listen(port, function() {});
@@ -20,7 +20,7 @@ router.use(cors())
 // accept json
 router.use(bodyParser.json());
 
-router.get("/users", VerifyToken, function (req, res) {
+/*router.get("/users", VerifyToken, function (req, res) {
     const contents = [];
 
     //  Find users
@@ -32,27 +32,27 @@ router.get("/users", VerifyToken, function (req, res) {
 
             //  REST Level 3
             user.options = {
-                getUser: "/api/user/" + item._id,
-                updateUser: "/api/user/update/" + + item._id,
-                deleteUser: "/api/user/delete/" + item._id,
-                createNewUser: "/api/user/create",
+                getUser: "/api/Schemas/" + item._id,
+                updateUser: "/api/Schemas/update/" + + item._id,
+                deleteUser: "/api/Schemas/delete/" + item._id,
+                createNewUser: "/api/Schemas/create",
             };
             contents.push(user);
         });
 
         res.status(200).send(contents);
     });
-});
+});*/
 
 router.get("/:id", VerifyToken, function (req, res) {
 
     //  Check rights
-    if(req.userId != req.params.id) return res.status(401).send("No permission to show user");
+    if(req.userId != req.params.id) return res.status(401).send("No permission to show Schemas");
 
-    //  Find user
+    //  Find Schemas
     User.findById(req.params.id, function (err, user) {
-        if (err) return res.status(500).send("There was a problem finding the user.");
-        if (!user) return res.status(404).send("No user found.");
+        if (err) return res.status(500).send("There was a problem finding the Schemas.");
+        if (!user) return res.status(404).send("No Schemas found.");
         let userCopy = JSON.parse(JSON.stringify(user));
 
         //  REST Level 3
@@ -84,13 +84,13 @@ router.post('/create', function (req, res) {
                 age: req.body.age
             },
             function (err, user) {
-                if (err) return res.status(500).send("There was a problem registering the user`.");
-                // if user is registered without errors
+                if (err) return res.status(500).send("There was a problem registering the Schemas`.");
+                // if Schemas is registered without errors
                 // create a token
                 var token = jwt.sign({id: user._id}, config.secret, {
                     expiresIn: 86400 // expires in 24 hours
                 });
-                //Create a folder for user
+                //Create a folder for Schemas
                 var folderPath = createfolder(user._id);
 
                 //todo her sendes altid 200 - hvad hvis der sker fejl i createFolder?
@@ -114,14 +114,14 @@ router.post('/create', function (req, res) {
 
 
 function createfolder(user_id) {
-    const folderName = './Users/' + user_id;
+    const folderName = './UserData/' + user_id;
     var response_msg;
     try {
         if (!fs.existsSync(folderName)) {
             fs.mkdirSync(folderName)
             response_msg = "The folder " + "\"" + user_id + "\"" + " successfully created";
         } else
-            response_msg = "The folder already exists for this user";
+            response_msg = "The folder already exists for this Schemas";
     } catch (error) {
         console.error(error)
         response_msg = error
@@ -130,7 +130,7 @@ function createfolder(user_id) {
 }
 
 function deletefolder(user_id) {
-    const folder = './Users/' + user_id;
+    const folder = './UserData/' + user_id;
     var response_msg = "Folder not deleted";
     try {
         fs_extra.removeSync(folder, {recursive: true})
@@ -142,10 +142,10 @@ function deletefolder(user_id) {
     return response_msg;
 }
 
-router.post("/update/:id", VerifyToken, function (req, res) {
+router.update("/update/:id", VerifyToken, function (req, res) {
 
     //  Check rights
-    if(req.userId != req.params.id) return res.status(401).send("No permission to update user");
+    if(req.userId != req.params.id) return res.status(401).send("No permission to update Schemas");
 
     //  Encrypt password
     var hashedPassword = bcrypt.hashSync(req.body.password, 8);
@@ -153,7 +153,7 @@ router.post("/update/:id", VerifyToken, function (req, res) {
 
     //  Find and update
     User.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, user) {
-        if (err) return res.status(500).send("There was a problem updating the user.");
+        if (err) return res.status(500).send("There was a problem updating the Schemas.");
         let userCopy = JSON.parse(JSON.stringify(user));
 
         //  REST Level 3
@@ -168,21 +168,21 @@ router.post("/update/:id", VerifyToken, function (req, res) {
     });
 });
 
-router.post("/delete/:id", VerifyToken, function (req, res) {
+router.delete("/delete/:id", VerifyToken, function (req, res) {
 
     //  Check rights
-    if(req.userId != req.params.id) return res.status(401).send("No permission to delete user.");
+    if(req.userId != req.params.id) return res.status(401).send("No permission to delete Schemas.");
 
     //  Find and remove
     User.findByIdAndRemove(req.params.id, function (err, user) {
-        if (err || !user) return res.status(500).send("There was a problem deleting the user.");
+        if (err || !user) return res.status(500).send("There was a problem deleting the Schemas.");
         deletefolder(req.params.id);
 
         //REST Level 3
         res.status(200).send({
             action: "User: " + user.name + " (" + user._id + ") " + " was deleted.",
             options: {
-                createNewUser: "/api/user/create",
+                createNewUser: "/api/Schemas/create",
             }
         });
     });

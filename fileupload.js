@@ -9,8 +9,8 @@ const nanoid = require('nanoid')
 var cors = require('cors');
 var router = express.Router();
 const config = require('./config');
-var User = require('./user/User');
-var urlshema = require('./url')
+var User = require('./Schemas/User');
+var urlshema = require('./Schemas/url')
 var VerifyToken = require('./auth/VerifyToken');
 
 router.use(cors())
@@ -22,18 +22,21 @@ router.use(cors())
   */
  router.get('/',VerifyToken,async function(req,res){
     const contents = [];
-    for await (const entry of readdirp('./Users/'+req.userId,{type: 'files_directories'})) {
+    for await (const entry of readdirp('./UserData/'+req.userId,{type: 'files_directories'})) {
         var stats = fs.lstatSync(entry.fullPath);
         if(stats.isDirectory()){
             contents.push({path:entry.path+"/",type:"directory",options:{delete: "/api/files/delete/"+"?path="+entry.path+'/',
                     Rename: "/api/files/rename/"+"?oldpath="+entry.path+'/'+"&newname=name",
                     Move: "/api/files/move/"+"?oldpath="+entry.path+'/'+"&newdirectorypath=somefolderpath/",
-                    CreateDirectory: "/api/files/createdirectory/"+"?path="+entry.path+'/'+"&name=directoryname"},
+                    CreateDirectory: "/api/files/createdirectory/"+"?path="+entry.path+'/'+"&name=directoryname",
+                    UploadFile:'/api/files/upload/?path='+entry.path},
             })
         }else
         contents.push({path:entry.path,type:"file",options:{delete: "/api/files/delete/"+"?path="+entry.path,
                 Rename: "/api/files/rename/"+"?oldpath="+entry.path+"&newname=name",
-                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath/"}})
+                Move: "/api/files/move/"+"?oldpath="+entry.path+"&newdirectorypath=somefolderpath/",
+                Download: "/api/files/download/?path="+entry.path,
+                GlobalUrl: '/api/files/globaldownload/?path='+entry.path}})
     }
     res.status(200).json(contents);
 });
@@ -45,35 +48,42 @@ router.use(cors())
  router.post('/upload',VerifyToken,function(req,res){
 
      const path = req.query.path
+     let filename
     var storage =   multer.diskStorage({
         destination: function (req, file, callback) {
-            callback(null, './Users/'+req.userId+"/"+path);
+            callback(null, './UserData/'+req.userId+"/"+path);
         },
         filename: function (req, file, callback) {
+            filename = file.originalname
             callback(null, file.originalname);
         }
     });
 
     var upload = multer({ storage : storage}).single('myfile'); //Der bliver kun håndteret enkel fil og key skal være myfile ellers fejler den
 
-    upload(req,res,function(err) {
+    upload(req,res,function(err,done) {
         if(err) {
             return res.status(204).end("Error uploading file.");
         }
-        res.status(200).end("File is uploaded successfully!");
+        const fullpath = path+'/'+filename
+        res.status(200).json({Response:'File uploaded successfully',options:{delete: "/api/files/delete/"+"?path="+fullpath,
+                Rename: "/api/files/rename/"+"?oldpath="+fullpath+"&newname=somename",
+                Move: "/api/files/move/"+"?oldpath="+fullpath+"&newdirectorypath=somefolderpath/",
+                Download: "/api/files/download/?path="+fullpath,
+                GlobalUrl: '/api/files/globaldownload/?path='+fullpath}});
     });
 });
 
  router.post('/createdirectory/',VerifyToken,function (req,res){
      var path, outpath
      if(!req.query.path) { // if you want to create the folder inside root.
-         path = './Users/' + req.userId + '/' + req.query.name + '/'
+         path = './UserData/' + req.userId + '/' + req.query.name + '/'
          outpath = req.query.name + '/'
      }
      else
      {
          outpath = req.query.path + req.query.name + '/'
-         path = './Users/' + req.userId + '/' + req.query.path + req.query.name + '/'
+         path = './UserData/' + req.userId + '/' + req.query.path + req.query.name + '/'
      }
      const isdone = createDirectory(path)
      var response
@@ -82,8 +92,8 @@ router.use(cors())
          res.status(200).json({response: response,options:{
              upload: "/api/files/upload/"+"?path="+outpath,
              delete: "/api/files/delete/"+"?path="+outpath,
-                 Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=somename",
-                 Move: "/api/files/move/"+"?oldpath="+outpath+"&newdirectorypath=somefolderpath/"}})
+             Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=somename",
+             Move: "/api/files/move/"+"?oldpath="+outpath+"&newdirectorypath=somefolderpath/"}})
      }
      else if(!isdone){
          response = "error creating the folder"
@@ -91,8 +101,8 @@ router.use(cors())
      }
 })
 
-router.post('/rename/',VerifyToken,function (req,res){
-    const oldpath = './Users/'+req.userId+'/'+req.query.oldpath
+router.put('/rename/',VerifyToken,function (req,res){
+    const oldpath = './UserData/'+req.userId+'/'+req.query.oldpath
     const subpath = '/'+req.query.oldpath
     var status
     let fileexists = true;
@@ -103,7 +113,7 @@ router.post('/rename/',VerifyToken,function (req,res){
         res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
     }
     const newname = req.query.newname
-    let newpath,outpath;
+    let newpath,outpath,filetype;
     if(status.isDirectory()) {
         const index_out = subpath.lastIndexOf('/', subpath.lastIndexOf('/') - 1);
         const index = oldpath.lastIndexOf('/', oldpath.lastIndexOf('/') - 1);
@@ -118,7 +128,7 @@ router.post('/rename/',VerifyToken,function (req,res){
         outpath = subpath.substring(0,indexname_out)+'/'+newname+filetype_out
         const indexofname = oldpath.lastIndexOf('/');
         const oldfileindex = oldpath.lastIndexOf('.');
-        const filetype = oldpath.substring(oldfileindex, oldpath.length);
+        filetype = oldpath.substring(oldfileindex, oldpath.length);
         const filepath = oldpath.substring(0, indexofname);
         newpath = filepath + '/' +newname+filetype
     }
@@ -128,17 +138,20 @@ router.post('/rename/',VerifyToken,function (req,res){
     const fileRenamed = rename(oldpath, newpath)
     if(fileRenamed.done) {
         if (status.isFile()) {
-            response = "File successfully renamed to "+newname
+            response = "File successfully renamed to "+newname+filetype
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + path,
-                    Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/"
+                    Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/",
+                    Download: "/api/files/download/?path="+path,
+                    GlobalUrl: '/api/files/globaldownload/?path='+path
                 }
             })
         }else {
             response = "Folder successfully renamed to "+newname
             options.push({
                 response: response, options: {
+                    upload: "/api/files/upload/"+"?path="+path,
                     delete: "/api/files/delete/" + "?path=" + path,
                     Move: "/api/files/move/"+"?oldpath="+path+"&newdirectorypath=somefolderpath/",
                     CreateDirectory: "/api/files/createdirectory/" + "?path=" + path + "&name=directoryname"
@@ -157,8 +170,8 @@ router.post('/rename/',VerifyToken,function (req,res){
 /**
  * Husk at tilføje '/' til sidst. når det gælder en directory path
  */
-router.post('/move/',VerifyToken,function (req,res){
-    var oldpath = './Users/'+req.userId+'/'+req.query.oldpath
+router.put('/move/',VerifyToken,function (req,res){
+    var oldpath = './UserData/'+req.userId+'/'+req.query.oldpath
     var status
     try {
          status = fs.statSync(oldpath)
@@ -168,7 +181,7 @@ router.post('/move/',VerifyToken,function (req,res){
     }
     console.log(status)
     try {
-        fs.statSync('./Users/'+req.userId+'/'+req.query.newdirectorypath)
+        fs.statSync('./UserData/'+req.userId+'/'+req.query.newdirectorypath)
     }catch (err){
         res.status(406).send("Error: ENOENT: no such file or directory. Provide correct new directory path")
         return;
@@ -178,7 +191,7 @@ router.post('/move/',VerifyToken,function (req,res){
     else index = oldpath.lastIndexOf('/')+1
     var name = oldpath.substring(index,oldpath.length)
     console.log(name)
-    var newpath = './Users/'+req.userId+'/'+req.query.newdirectorypath+name
+    var newpath = './UserData/'+req.userId+'/'+req.query.newdirectorypath+name
     var outpath = req.query.newdirectorypath+name
     var response
     var options = []
@@ -194,13 +207,16 @@ router.post('/move/',VerifyToken,function (req,res){
             options.push({
                 response: response, options: {
                     delete: "/api/files/delete/" + "?path=" + outpath,
-                    Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name"
+                    Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name",
+                    Download: "/api/files/download/?path="+outpath,
+                    GlobalUrl: '/api/files/globaldownload/?path='+outpath
                 }
             })
         }else {
             response = "Folder successfully moved to "+outpath
             options.push({
                 response: response, options: {
+                    upload: "/api/files/upload/"+"?path="+outpath,
                     delete: "/api/files/delete/" + "?path=" + outpath,
                     Rename: "/api/files/rename/"+"?oldpath="+outpath+"&newname=name",
                     CreateDirectory: "/api/files/createdirectory/" + "?path=" + outpath + "&name=directoryname"
@@ -217,7 +233,7 @@ router.post('/move/',VerifyToken,function (req,res){
 
  router.delete('/delete/',VerifyToken,function (req,res){
      temp = []
-     const path = './Users/'+req.userId+'/'+req.query.path
+     const path = './UserData/'+req.userId+'/'+req.query.path
      var status = fs.statSync(path)
      var response
      if(status.isFile()){
@@ -233,11 +249,11 @@ router.post('/move/',VerifyToken,function (req,res){
  *  :file bliver betragtet som url parameter. se status rapport for en eksempel
  */
  router.post('/download/',VerifyToken,function(req,res){
-     const path = './Users/'+req.userId+'/'+req.query.path
+     const path = './UserData/'+req.userId+'/'+req.query.path
      try{
          var status = fs.statSync(path)
          if(status.isFile()){
-             res.download("./Users/"+req.userId+'/'+req.query.path);
+             res.download("./UserData/"+req.userId+'/'+req.query.path);
          }
          if(status.isDirectory()){
              res.status(400).send("Downloading a folder not allowed.")
@@ -247,7 +263,7 @@ router.post('/move/',VerifyToken,function (req,res){
      }
 });
 router.post('/globaldownload/',VerifyToken, async function (req,res){
-    const pathparams = './Users/'+req.userId+'/'+req.query.path
+    const pathparams = './UserData/'+req.userId+'/'+req.query.path
     try{
         var status = fs.statSync(pathparams)
         if(status.isFile()){
@@ -309,7 +325,7 @@ function deletefolderSync(path) {
     var response_msg = "Folder not deleted";
     try {
         fs_extra.removeSync(folder, {recursive: true})
-        response_msg = "The folder " + "\"" + path + "\"" +"for user"+ " is safely removed";
+        response_msg = "The folder " + "\"" + path + "\"" +"for Schemas"+ " is safely removed";
     } catch (error) {
         response_msg = error;
     }

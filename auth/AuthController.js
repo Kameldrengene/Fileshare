@@ -9,7 +9,7 @@ const fs = require('fs');
 var bcrypt = require('bcryptjs');
 var config = require('../config');
 var VerifyToken = require('./VerifyToken');
-var User = require('../user/User');
+var User = require('../Schemas/User');
 
 router.use(cors());
 
@@ -18,7 +18,7 @@ router.post('/login',function (req, res) {
         if(err) return res.status(500).send('Server error!');
         if(req.body.email == null) return res.status(400).send('Email missing!');
         if(req.body.password == null) return res.status(400).send('Password missing!');
-        if(!user) return res.status(404).send('No user found!');
+        if(!user) return res.status(404).send('No Schemas found!');
 
         if(!bcrypt.compareSync(req.body.password, user.password))
             return res.status(401).send({Response:'Incorrect credentials!'});
@@ -30,4 +30,3 @@ router.post('/login',function (req, res) {
     });
 });
 
-module.exports = router;
