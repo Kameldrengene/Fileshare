@@ -20,7 +20,7 @@ router.use(cors())
 // accept json
 router.use(bodyParser.json());
 
-router.get("/users", VerifyToken, function (req, res) {
+/*router.get("/users", VerifyToken, function (req, res) {
     const contents = [];
 
     //  Find users
@@ -42,7 +42,7 @@ router.get("/users", VerifyToken, function (req, res) {
 
         res.status(200).send(contents);
     });
-});
+});*/
 
 router.get("/:id", VerifyToken, function (req, res) {
 
@@ -140,7 +140,7 @@ function deletefolder(user_id) {
     return response_msg;
 }
 
-router.post("/update/:id", VerifyToken, function (req, res) {
+router.update("/update/:id", VerifyToken, function (req, res) {
 
     //  Check rights
     if(req.userId != req.params.id) return res.status(401).send("No permission to update Schemas");
@@ -165,7 +165,7 @@ router.post("/update/:id", VerifyToken, function (req, res) {
     });
 });
 
-router.post("/delete/:id", VerifyToken, function (req, res) {
+router.delete("/delete/:id", VerifyToken, function (req, res) {
 
     //  Check rights
     if(req.userId != req.params.id) return res.status(401).send("No permission to delete Schemas.");

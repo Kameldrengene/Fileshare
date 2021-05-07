@@ -101,7 +101,7 @@ router.use(cors())
      }
 })
 
-router.post('/rename/',VerifyToken,function (req,res){
+router.put('/rename/',VerifyToken,function (req,res){
     const oldpath = './UserData/'+req.userId+'/'+req.query.oldpath
     const subpath = '/'+req.query.oldpath
     var status
@@ -170,7 +170,7 @@ router.post('/rename/',VerifyToken,function (req,res){
 /**
  * Husk at tilføje '/' til sidst. når det gælder en directory path
  */
-router.post('/move/',VerifyToken,function (req,res){
+router.put('/move/',VerifyToken,function (req,res){
     var oldpath = './UserData/'+req.userId+'/'+req.query.oldpath
     var status
     try {
