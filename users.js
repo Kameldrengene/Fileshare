@@ -20,7 +20,7 @@ router.use(cors())
 // accept json
 router.use(bodyParser.json());
 
-router.get("/users", VerifyToken, function (req, res) {
+/*router.get("/users", VerifyToken, function (req, res) {
     const contents = [];
 
     //  Find users
@@ -42,7 +42,7 @@ router.get("/users", VerifyToken, function (req, res) {
 
         res.status(200).send(contents);
     });
-});
+});*/
 
 router.get("/:id", VerifyToken, function (req, res) {
 
@@ -50,16 +50,17 @@ router.get("/:id", VerifyToken, function (req, res) {
     if(req.userId != req.params.id) return res.status(401).send("No permission to show Schemas");
 
     //  Find Schemas
-    User.findById(req.params.id, function (err, user) {
+    User.findById(req.params.id, {password: 0}, function (err, user) {
         if (err) return res.status(500).send("There was a problem finding the Schemas.");
         if (!user) return res.status(404).send("No Schemas found.");
         let userCopy = JSON.parse(JSON.stringify(user));
 
         //  REST Level 3
         userCopy.options = {
-            updateUser: "/api/Schemas/update/" + user._id,
-            deleteUser: "/api/Schemas/delete/" + user._id,
-            createNewUser: "/api/Schemas/create",
+            updateUser: "/api/user/update/" + user._id,
+            deleteUser: "/api/user/delete/" + user._id,
+            createNewUser: "/api/user/create",
+	    getUserFiles: "/api/files",
         }
 
         res.status(200).send(userCopy);
@@ -101,9 +102,10 @@ router.post('/create', function (req, res) {
 
                 //  REST Level 3
                 options: {
-                    getUser: "/api/Schemas/" + user._id,
-                    updateUser: "/api/Schemas/update/" + user._id,
-                    deleteUser: "/api/Schemas/delete/" + user._id,
+                    getUser: "/api/user/" + user._id,
+                    updateUser: "/api/user/update/" + user._id,
+                    deleteUser: "/api/user/delete/" + user._id,
+		    getUserFiles: "/api/files",
                 }
             });
         });
@@ -140,7 +142,7 @@ function deletefolder(user_id) {
     return response_msg;
 }
 
-router.post("/update/:id", VerifyToken, function (req, res) {
+router.put("/update/:id", VerifyToken, function (req, res) {
 
     //  Check rights
     if(req.userId != req.params.id) return res.status(401).send("No permission to update Schemas");
@@ -156,16 +158,18 @@ router.post("/update/:id", VerifyToken, function (req, res) {
 
         //  REST Level 3
         userCopy.options = {
-            getUser: "/api/Schemas/" + user._id,
-            deleteUser: "/api/Schemas/delete/" + user._id,
-            createNewUser: "/api/Schemas/create",
+            getUser: "/api/user/" + user._id,
+            deleteUser: "/api/user/delete/" + user._id,
+            createNewUser: "/api/user/create",
+	    getUserFiles: "/api/files",
         };
+        delete userCopy.password;
 
         res.status(200).send(userCopy);
     });
 });
 
-router.post("/delete/:id", VerifyToken, function (req, res) {
+router.delete("/delete/:id", VerifyToken, function (req, res) {
 
     //  Check rights
     if(req.userId != req.params.id) return res.status(401).send("No permission to delete Schemas.");
