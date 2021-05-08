@@ -105,12 +105,12 @@ router.put('/rename/',VerifyToken,function (req,res){
     const oldpath = './UserData/'+req.userId+'/'+req.query.oldpath
     const subpath = '/'+req.query.oldpath
     var status
-    let fileexists = true;
     try {
         status = fs.statSync(oldpath)
+        if(!(status.isDirectory() || status.isFile()))
+            return res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
     }catch (err){
-        fileexists = false;
-        res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
+        return res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
     }
     const newname = req.query.newname
     let newpath,outpath,filetype;
@@ -158,12 +158,10 @@ router.put('/rename/',VerifyToken,function (req,res){
                 }
             })
         }
-        if(fileexists)res.status(201).json(options)
+        return res.status(201).json(options)
     }else {
-        if(fileexists) {
-            if (status.isFile()) res(406).end(fileRenamed.error)
-            else res.status(406).end(fileRenamed.error)
-        }
+        if (status.isFile()) return res(406).end(fileRenamed.error)
+        else return res.status(406).end(fileRenamed.error)
     }
 })
 
@@ -172,25 +170,33 @@ router.put('/rename/',VerifyToken,function (req,res){
  */
 router.put('/move/',VerifyToken,function (req,res){
     var oldpath = './UserData/'+req.userId+'/'+req.query.oldpath
-    var status
+    var status,newpathstatus
     try {
          status = fs.statSync(oldpath)
     }catch (err){
         res.status(406).send("Error: ENOENT: no such file or directory. Provide correct old path")
         return
     }
-    console.log(status)
+    if(req.query.newdirectorypath!==null)
+        if(req.query.newdirectorypath.lastIndexOf('/')!==req.query.newdirectorypath.length-1)
+            return res.status(406).send("Remember to add \"/\" at the end of new directory path")
     try {
-        fs.statSync('./UserData/'+req.userId+'/'+req.query.newdirectorypath)
+        newpathstatus = fs.statSync('./UserData/'+req.userId+'/'+req.query.newdirectorypath)
     }catch (err){
-        res.status(406).send("Error: ENOENT: no such file or directory. Provide correct new directory path")
+        res.status(406).send("Error: ENOENT: No such directory exists. Provide correct \"new directory path\"")
         return;
     }
+    if(newpathstatus.isFile()) return res.status(406).send("you provided a file path! new directory path can not be a file path")
     let index
-    if(status.isDirectory())index = oldpath.lastIndexOf('/',oldpath.lastIndexOf('/')-1)+1
+    if(status.isDirectory()){
+        if(req.query.oldpath!==null){
+            if(req.query.oldpath.lastIndexOf('/')!==req.query.oldpath.length-1)
+                return res.status(406).send("Remember to add \"/\" at the end of old directory path")
+        }
+        index = oldpath.lastIndexOf('/',oldpath.lastIndexOf('/')-1)+1
+    }
     else index = oldpath.lastIndexOf('/')+1
     var name = oldpath.substring(index,oldpath.length)
-    console.log(name)
     var newpath = './UserData/'+req.userId+'/'+req.query.newdirectorypath+name
     var outpath = req.query.newdirectorypath+name
     var response
@@ -199,7 +205,7 @@ router.put('/move/',VerifyToken,function (req,res){
     try {
         filemoved = rename(oldpath,newpath)
     }catch (err){
-        res.status(406).send("nothing")
+        return res.status(406).send("nothing")
     }
     if(filemoved.done){
         if (status.isFile()) {
@@ -223,7 +229,7 @@ router.put('/move/',VerifyToken,function (req,res){
                 }
             })
         }
-        res.status(201).json(options)
+        return res.status(201).json(options)
     }
     else {
         if (status.isFile()) res.status(500).render("Error moving the file" + filemoved.done)
@@ -234,7 +240,11 @@ router.put('/move/',VerifyToken,function (req,res){
  router.delete('/delete/',VerifyToken,function (req,res){
      temp = []
      const path = './UserData/'+req.userId+'/'+req.query.path
-     var status = fs.statSync(path)
+     try {
+         var status = fs.statSync(path)
+     }catch (err){
+         return res.status(500).send("NO SUCH FILE OR DIRECTORY EXISTS!")
+     }
      var response
      if(status.isFile()){
          response = deletefileSync(path)
