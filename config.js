@@ -1,5 +1,5 @@
 // config.js
 module.exports = {
     'secret': 'kameldreng',
-    'baseurl': 'localhost:3000'
+    'baseurl': 'api.isik.dk'
   };
