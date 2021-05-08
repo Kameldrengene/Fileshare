@@ -26,7 +26,14 @@ router.post('/login',function (req, res) {
         var token = jwt.sign({id: user._id}, config.secret, {
             expiresIn: 86400 // expires in 24 hours
         });
-        res.status(200).send({token:token, files:'/api/files/', id: user._id, user:'/api/user/'+user._id});
+        res.status(200).send({
+		token:token, 
+		id: user._id, 
+		options: {
+			getFiles: 'api/files/',
+			getUser: 'api/user/' + user._id,
+		},
+	});
     });
 });
 
