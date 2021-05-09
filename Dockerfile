@@ -3,6 +3,9 @@ FROM node:14
 # Create app directory
 WORKDIR /usr/src/app
 
+# Create directory for files
+RUN mkdir UserData
+
 # Install app dependencies
 COPY package*.json ./
 RUN npm install
@@ -11,4 +14,4 @@ RUN npm install
 COPY . .
 
 # Start service
-CMD [ "nodemon", "node", "index.js" ]
+CMD [ "node", "index.js" ]
